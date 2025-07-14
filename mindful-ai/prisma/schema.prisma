@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// === USER MODEL ===
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Gamification fields
+  level        Int @default(1)
+  experience   Int @default(0)
+  totalPoints  Int @default(0)
+
+  // Relations
+  chatSessions ChatSession[]
+  memoryEntries MemoryEntry[]
+  userAchievements UserAchievement[]
+
+  @@map("users")
+}
+
+// === CHAT SESSION MODEL ===
+model ChatSession {
+  id           String   @id @default(cuid())
+  userId       String?  // Optional for guest users
+  assistantType String  // "coach", "therapist", "mentor", "friend"
+  title        String?  // Optional session title
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  analyses  Analysis[]
+
+  @@map("chat_sessions")
+}
+
+// === MESSAGE MODEL ===
+model Message {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String   // "user" or "assistant"
+  content   String
+  order     Int      // Message order in conversation
+  metadata  Json?    // Additional metadata (tokens, etc.)
+  createdAt DateTime @default(now())
+
+  // Relations
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, order])
+  @@map("messages")
+}
+
+// === ANALYSIS MODEL ===
+model Analysis {
+  id           String   @id @default(cuid())
+  sessionId    String
+  strategy     String   // "action-oriented", "pattern-focused", etc.
+  insights     Json     // Array of insights
+  emotions     Json?    // Emotional analysis data
+  patterns     Json?    // Identified patterns
+  recommendations Json? // Action recommendations
+  metadata     Json?    // Additional analysis metadata
+  createdAt    DateTime @default(now())
+
+  // Relations
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("analyses")
+}
+
+// === MEMORY ENTRY MODEL ===
+model MemoryEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  content     String   // The insight/memory content
+  type        String   // "insight", "pattern", "emotion", "action"
+  tags        Json?    // Array of tags for categorization
+  sourceType  String?  // "analysis", "manual", "chat"
+  sourceId    String?  // Reference to source (analysisId, sessionId, etc.)
+  importance  Int      @default(1) // 1-5 scale for importance
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([userId, createdAt])
+  @@map("memory_entries")
+}
+
+// === ACHIEVEMENT MODEL ===
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique // Уникальный ключ достижения
+  name        String   // Название достижения
+  description String   // Описание достижения
+  icon        String?  // Иконка достижения
+  category    String   // Категория: "engagement", "progress", "milestones"
+  points      Int      // Количество очков за достижение
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+// === USER ACHIEVEMENT MODEL ===
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  earnedAt      DateTime @default(now())
+  metadata      Json?    // Дополнительные данные о получении достижения
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
+}

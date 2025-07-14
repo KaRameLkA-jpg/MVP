@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindful AI - Чат с ИИ-ассистентом</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Экран выбора ассистента -->
+        <div id="assistant-selection" class="screen">
+            <div class="selection-container">
+                <div class="history-top-button">
+                    <button id="go-to-history" class="memory-map-btn">📚 История чатов</button>
+                </div>
+
+                <h1>Выберите тип ассистента</h1>
+                <p class="subtitle">Выберите подходящего помощника для вашего диалога</p>
+                
+                <div id="assistants-grid" class="assistants-grid">
+                    <!-- Ассистенты будут загружены динамически -->
+                </div>
+                
+                <div id="loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Загрузка ассистентов...</p>
+                </div>
+                
+                <div id="error-message" class="error-message hidden">
+                    <p>Ошибка загрузки ассистентов. Проверьте подключение к серверу.</p>
+                    <button onclick="app.loadAssistants()">Попробовать снова</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Экран чата -->
+        <div id="chat-screen" class="screen hidden">
+            <div class="chat-container">
+                <!-- Заголовок чата -->
+                <div class="chat-header">
+                    <button id="back-btn" class="back-btn">&larr;</button>
+                    <div class="assistant-info">
+                        <h2 id="current-assistant-name"></h2>
+                        <p id="current-assistant-description"></p>
+                    </div>
+                    
+                    <!-- Геймификация в заголовке -->
+                    <div class="gamification-header">
+                        <div class="level-info">
+                            <span id="level-display">Уровень 1</span>
+                            <div class="experience-container">
+                                <div class="experience-bar-bg">
+                                    <div id="experience-bar" class="experience-bar"></div>
+                                </div>
+                                <span id="experience-text">0/1000 XP</span>
+                            </div>
+                        </div>
+                        <button id="achievements-btn" class="achievements-btn">🏆</button>
+                    </div>
+                    
+                    <button id="memory-map-btn" class="memory-map-btn">Карта памяти</button>
+                </div>
+
+                <!-- Основная область контента -->
+                <div class="main-content">
+                    <!-- Область сообщений -->
+                    <div id="messages-container" class="messages-container">
+                        <div class="welcome-message">
+                            <p>Привет! Я готов помочь вам. Напишите сообщение, чтобы начать диалог.</p>
+                        </div>
+                    </div>
+
+                    <!-- Панель инсайтов -->
+                    <div id="insights-panel" class="insights-panel hidden">
+                        <div class="insights-header">
+                            <h3>Инсайты</h3>
+                            <button id="toggle-insights" class="toggle-insights-btn">&times;</button>
+                        </div>
+                        <div id="insights-container" class="insights-container">
+                            <div class="no-insights">
+                                <p>Инсайты будут появляться здесь по мере анализа диалога</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Форма ввода -->
+                <form id="message-form" class="message-form">
+                    <div class="input-container">
+                        <textarea 
+                            id="message-input" 
+                            placeholder="Напишите ваше сообщение..."
+                            rows="1"
+                            maxlength="1000"
+                        ></textarea>
+                        <button type="submit" id="send-btn" class="send-btn" disabled>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="input-info">
+                        <span id="char-counter">0/1000</span>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Модальное окно карты памяти -->
+        <div id="memory-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Карта памяти</h2>
+                    <button id="close-memory-modal" class="close-modal-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    
+<!-- Поиск по памяти -->
+<div class="memory-search">
+    <input id="memory-search-input" type="text" placeholder="Поиск по инсайтам...">
+    <button onclick="app.searchMemory()">🔍</button>
+</div>
+
+<div id="memory-container" class="memory-container">
+                        <div class="no-memory">
+                            <p>Сохранённых инсайтов пока нет</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно достижений -->
+        <div id="achievements-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🏆 Достижения</h2>
+                    <button id="close-achievements-modal" class="close-modal-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="achievements-container" class="achievements-container">
+                        <div class="no-achievements">
+                            <p>Достижения загружаются...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Уведомления о очках -->
+        <div id="points-notification" class="points-notification hidden">
+            <div class="points-text">+10 XP за сообщение</div>
+        </div>
+    </div>
+        <!-- Экран истории чатов -->
+<div id="chat-history-screen" class="screen hidden">
+  <div class="selection-container">
+    <h1>История чатов</h1>
+    <div id="chat-history-list" class="assistants-grid"></div>
+    <button onclick="app.showAssistantSelection()">Назад</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
+
+
